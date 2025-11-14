@@ -1,0 +1,3 @@
+docker-compose up  --build postgres -d
+docker-compose up --build backend -d  
+docker-compose up --build frontend -d

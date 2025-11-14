@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: gamemanagement
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./GameManagement/Backend/GameManagementAPI
+      dockerfile: Dockerfile
+    ports:
+      - "5024:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=gamemanagement;Username=postgres;Password=postgres
+    depends_on:
+      postgres:
+        condition: service_started
+
+
+  frontend:
+    build:
+      context: ./GameManagement/Frontend/game-management
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
