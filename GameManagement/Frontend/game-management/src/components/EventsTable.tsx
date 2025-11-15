@@ -22,7 +22,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null);
   const [editingEvent, setEditingEvent] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', payment: '', dateTime: '' });
+  const [editForm, setEditForm] = useState({ name: '', payment: '', dateTime: '', seasonId: 0 });
   const [people, setPeople] = useState<Person[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -69,17 +69,17 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
   // Отдельный useEffect для автовыбора сезона
   useEffect(() => {
     if (seasons.length > 0 && selectedSeasonId === null) {
-      const sortedSeasons = [...seasons].sort((a, b) => b.id - a.id);
-      setSelectedSeasonId(sortedSeasons[0].id);
+ const sortedSeasons = [...seasons].sort((a, b) => b.id - a.id);
+ setSelectedSeasonId(sortedSeasons[0].id);
       // Принудительно перезагружаем события после выбора сезона
-      setTimeout(() => setForceReload(prev => prev + 1), 100);
+ setTimeout(() => setForceReload(prev => prev + 1), 100);
     }
-  }, [seasons, selectedSeasonId]);
-
-
+  }, [seasons]);
 
   // Перезагрузка при монтировании
   useEffect(() => {
+
+
     setForceReload(prev => prev + 1);
   }, []);
 
@@ -166,7 +166,8 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
     setEditForm({
       name: event.name,
       payment: event.payment.toString(),
-      dateTime: event.dateTime ? event.dateTime.slice(0, 16) : ''
+      dateTime: event.dateTime ? event.dateTime.slice(0, 16) : '',
+      seasonId: event.seasonId
     });
   };
 
@@ -175,7 +176,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
       const updatedEvent = {
         id: event.id,
         name: editForm.name,
-        seasonId: event.seasonId,
+        seasonId: editForm.seasonId,
         payment: Number(editForm.payment),
         dateTime: editForm.dateTime || event.dateTime
       };
@@ -197,7 +198,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
 
   const cancelEdit = () => {
     setEditingEvent(null);
-    setEditForm({ name: '', payment: '', dateTime: '' });
+    setEditForm({ name: '', payment: '', dateTime: '', seasonId: 0 });
   };
 
   const removeParticipant = async (eventId: number, personId: number) => {
@@ -350,7 +351,21 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
                     />
                   ) : event.name}
                 </td>
-                <td style={{ border: '1px solid #ddd', padding: '12px' }}>{event.seasonId}</td>
+                <td style={{ border: '1px solid #ddd', padding: '12px' }}>
+                  {editingEvent === event.id ? (
+                    <select
+                      value={editForm.seasonId}
+                      onChange={(e) => setEditForm({ ...editForm, seasonId: Number(e.target.value) })}
+                      style={{ padding: '5px' }}
+                    >
+                      {seasons.map(season => (
+                        <option key={season.id} value={season.id}>
+                          Сезон {season.id}
+                        </option>
+                      ))}
+                    </select>
+                  ) : event.seasonId}
+                </td>
                 <td style={{ border: '1px solid #ddd', padding: '12px' }}>
                   {editingEvent === event.id ? (
                     <input
