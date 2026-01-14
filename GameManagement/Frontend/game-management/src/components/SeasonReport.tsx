@@ -3,6 +3,7 @@ import { api } from '../api';
 import { Season, SeasonReport } from '../types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 export const SeasonReportComponent: React.FC = () => {
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -28,7 +29,7 @@ export const SeasonReportComponent: React.FC = () => {
       const seasons = Array.isArray(seasonsData) ? seasonsData : [];
       setSeasons(seasons);
       
-      // Выбираем последний сезон по умолчанию
+  
       if (seasons.length > 0) {
         const sortedSeasons = [...seasons].sort((a, b) => b.id - a.id);
         setSelectedSeason(sortedSeasons[0].id);
@@ -189,6 +190,62 @@ export const SeasonReportComponent: React.FC = () => {
     }
   };
 
+  const downloadExcel = async () => {
+    if (!selectedSeason) return;
+    
+    try {
+      const response = await api.getSeasonReport(selectedSeason, false, 1, 10000);
+      const allData = response.data.participants || response.data.Participants || [];
+      
+      const excelData = allData.map((item: any, index: number) => ({
+        '№': index + 1,
+        'Имя': item.person.name || '-',
+        'Игровое имя': item.person.gameName,
+        'Телефон': item.person.phoneNumber || '-',
+        'Событий': item.eventsCount,
+        'Общая сумма': item.totalPayment.toFixed(2)
+      }));
+      
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Season Report');
+      
+      const selectedSeasonData = Array.isArray(seasons) ? seasons.find(s => s.id === selectedSeason) : null;
+      const filename = `season-report-${selectedSeason}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+      alert('Ошибка генерации Excel');
+    }
+  };
+
+  const downloadExcelWithoutPhone = async () => {
+    if (!selectedSeason) return;
+    
+    try {
+      const response = await api.getSeasonReport(selectedSeason, false, 1, 10000);
+      const allData = response.data.participants || response.data.Participants || [];
+      
+      const excelData = allData.map((item: any, index: number) => ({
+        '№': index + 1,
+        'Имя': item.person.name || '-',
+        'Игровое имя': item.person.gameName,
+        'Событий': item.eventsCount,
+        'Общая сумма': item.totalPayment.toFixed(2)
+      }));
+      
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Season Report');
+      
+      const filename = `season-report-no-phone-${selectedSeason}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+      alert('Ошибка генерации Excel');
+    }
+  };
+
   const sortedReport = [...report].sort((a, b) => {
     let aValue: any;
     let bValue: any;
@@ -304,10 +361,38 @@ export const SeasonReportComponent: React.FC = () => {
                   border: 'none',
                   padding: '8px 16px',
                   borderRadius: '4px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  marginRight: '10px'
                 }}
               >
                 PDF без телефонов
+              </button>
+              <button
+                onClick={downloadExcel}
+                style={{
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  marginRight: '10px'
+                }}
+              >
+                Скачать Excel
+              </button>
+              <button
+                onClick={downloadExcelWithoutPhone}
+                style={{
+                  backgroundColor: '#17a2b8',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Excel без телефонов
               </button>
             </div>
           </div>

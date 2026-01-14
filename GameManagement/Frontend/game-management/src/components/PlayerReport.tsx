@@ -3,6 +3,7 @@ import { api } from '../api';
 import { Season, Person, Event } from '../types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 export const PlayerReportComponent: React.FC = () => {
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -150,6 +151,32 @@ export const PlayerReportComponent: React.FC = () => {
     }
   };
 
+  const downloadPlayerExcel = async () => {
+    if (!selectedPersonData || !selectedSeason || !selectedPerson) return;
+    
+    try {
+      const response = await api.getPersonReport(selectedPerson, selectedSeason, 1, 10000, sortField, sortDirection);
+      const allEvents = response.data.events || response.data.Events || [];
+      
+      const excelData = allEvents.map((event: any, index: number) => ({
+        '№': index + 1,
+        'Название события': event.name,
+        'Дата/время': event.dateTime ? event.dateTime.replace('T', ' ') : '-',
+        'Оплата': event.payment.toFixed(2)
+      }));
+      
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Player Report');
+      
+      const filename = `player-report-${selectedPersonData.gameName}-season-${selectedSeason}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+      alert('Ошибка генерации Excel');
+    }
+  };
+
   const sortedEvents = events; // Сортировка теперь на сервере
 
 
@@ -248,19 +275,35 @@ export const PlayerReportComponent: React.FC = () => {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
             <h4 style={{ margin: 0 }}>События игрока:</h4>
-            <button
-              onClick={downloadPlayerPDF}
-              style={{
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Скачать PDF
-            </button>
+            <div>
+              <button
+                onClick={downloadPlayerPDF}
+                style={{
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  marginRight: '10px'
+                }}
+              >
+                Скачать PDF
+              </button>
+              <button
+                onClick={downloadPlayerExcel}
+                style={{
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Скачать Excel
+              </button>
+            </div>
           </div>
           <table style={{ 
             width: '100%', 

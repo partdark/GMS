@@ -14,7 +14,7 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
     seasonId: '',
     payment: '',
     dateTime: new Date(new Date().getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 16),
-    participantIds: [0] // Начинаем с одного пустого ComboBox
+    participantIds: [0] 
   });
 
   useEffect(() => {
@@ -40,9 +40,9 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
       }
       setPeople(peopleData);
       
-      // Выбираем самый актуальный сезон по умолчанию
+  
       if (seasonsData.length > 0) {
-        const latestSeason = seasonsData[0]; // Уже отсортированы по дате
+        const latestSeason = seasonsData[0]; 
         setFormData(prev => ({ ...prev, seasonId: latestSeason.id.toString() }));
       }
     } catch (error) {
@@ -54,7 +54,7 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
     const newParticipantIds = [...formData.participantIds];
     newParticipantIds[index] = personId;
     
-    // Если выбран участник и это последний ComboBox, добавляем новый пустой
+   
     if (personId > 0 && index === newParticipantIds.length - 1) {
       newParticipantIds.push(0);
     }
@@ -64,7 +64,7 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
 
   const removeParticipant = (index: number) => {
     const newParticipantIds = formData.participantIds.filter((_, i) => i !== index);
-    // Если удалили все, оставляем один пустой
+
     if (newParticipantIds.length === 0) {
       newParticipantIds.push(0);
     }
@@ -94,7 +94,7 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
         dateTime: formData.dateTime
       });
       
-      // Добавляем участников к событию
+    
       for (const personId of selectedParticipants) {
         await api.addParticipant(response.data.id, personId);
       }
@@ -102,7 +102,7 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
       onEventAdded(response.data);
       setFormData({ name: '', seasonId: '', payment: '', dateTime: new Date(new Date().getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 16), participantIds: [0] });
       
-      // Перезагружаем страницу для обновления всех таблиц
+ 
       window.location.reload();
       
       alert('Событие создано!');

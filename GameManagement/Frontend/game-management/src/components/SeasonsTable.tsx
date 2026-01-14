@@ -41,7 +41,7 @@ export const SeasonsTable: React.FC<SeasonsTableProps> = ({ seasons: initialSeas
       
       setSeasons(seasonsData);
       
-      // Загружаем количество событий для каждого сезона
+
       const seasonsWithEventCounts = await Promise.all(
         seasonsData.map(async (season: any) => {
           try {

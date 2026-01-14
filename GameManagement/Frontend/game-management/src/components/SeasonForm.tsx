@@ -18,7 +18,7 @@ export const SeasonForm: React.FC<SeasonFormProps> = ({ onSeasonAdded }) => {
       onSeasonAdded(response.data);
       setStartDate(new Date().toISOString().split('T')[0]);
       
-      // Перезагружаем страницу для обновления всех таблиц
+
       window.location.reload();
       
       alert('Сезон создан!');
