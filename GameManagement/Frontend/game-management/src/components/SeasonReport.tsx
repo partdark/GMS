@@ -203,7 +203,7 @@ export const SeasonReportComponent: React.FC = () => {
         'Игровое имя': item.person.gameName,
         'Телефон': item.person.phoneNumber || '-',
         'Событий': item.eventsCount,
-        'Общая сумма': item.totalPayment.toFixed(2)
+        'Общая сумма': item.totalPayment.toFixed(2).replace('.', ',')
       }));
       
       const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -231,7 +231,7 @@ export const SeasonReportComponent: React.FC = () => {
         'Имя': item.person.name || '-',
         'Игровое имя': item.person.gameName,
         'Событий': item.eventsCount,
-        'Общая сумма': item.totalPayment.toFixed(2)
+        'Общая сумма': item.totalPayment.toFixed(2).replace('.', ',')
       }));
       
       const worksheet = XLSX.utils.json_to_sheet(excelData);

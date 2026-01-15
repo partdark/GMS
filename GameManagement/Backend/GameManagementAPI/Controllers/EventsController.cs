@@ -77,20 +77,35 @@ namespace GameManagementAPI.Controllers
         }
 
         [HttpPost("{eventId}/participants/{personId}")]
-        public async Task<IActionResult> AddParticipant(int eventId, int personId)
+        public async Task<IActionResult> AddParticipant(int eventId, int personId, [FromBody] PaymentRequest? request = null)
         {
-            var participant = new EventParticipant { EventId = eventId, PersonId = personId };
+            var eventItem = await _context.Events.FindAsync(eventId);
+            if (eventItem == null) return NotFound("Event not found");
+            
+            var participant = new EventParticipant 
+            { 
+                EventId = eventId, 
+                PersonId = personId,
+                Payment = request?.Payment ?? eventItem.Payment
+            };
             _context.EventParticipants.Add(participant);
             await _context.SaveChangesAsync();
             return Ok();
         }
 
         [HttpGet("{eventId}/participants")]
-        public async Task<ActionResult<IEnumerable<Person>>> GetEventParticipants(int eventId)
+        public async Task<ActionResult<IEnumerable<object>>> GetEventParticipants(int eventId)
         {
             var participants = await _context.EventParticipants
                 .Where(ep => ep.EventId == eventId)
-                .Select(ep => ep.Person)
+                .Select(ep => new
+                {
+                    ep.Person.Id,
+                    ep.Person.Name,
+                    ep.Person.GameName,
+                    ep.Person.PhoneNumber,
+                    ep.Payment
+                })
                 .ToListAsync();
             return Ok(participants);
         }
@@ -143,6 +158,18 @@ namespace GameManagementAPI.Controllers
             return NoContent();
         }
 
+        [HttpPut("{eventId}/participants/{personId}/payment")]
+        public async Task<IActionResult> UpdateParticipantPayment(int eventId, int personId, [FromBody] PaymentRequest request)
+        {
+            var participant = await _context.EventParticipants
+                .FirstOrDefaultAsync(ep => ep.EventId == eventId && ep.PersonId == personId);
+            if (participant == null) return NotFound();
+            
+            participant.Payment = request.Payment;
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
         [HttpDelete("{eventId}/participants/{personId}")]
         public async Task<IActionResult> RemoveParticipant(int eventId, int personId)
         {
@@ -154,6 +181,11 @@ namespace GameManagementAPI.Controllers
             return NoContent();
         }
     }
+}
+
+public class PaymentRequest
+{
+    public decimal Payment { get; set; }
 }
 
 public static class QueryableExtensions

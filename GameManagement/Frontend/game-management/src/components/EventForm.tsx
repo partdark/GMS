@@ -14,7 +14,7 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
     seasonId: '',
     payment: '',
     dateTime: new Date(new Date().getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 16),
-    participantIds: [0] 
+    participants: [{ personId: 0, payment: '' }]
   });
 
   useEffect(() => {
@@ -51,29 +51,36 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
   };
 
   const handleParticipantChange = (index: number, personId: number) => {
-    const newParticipantIds = [...formData.participantIds];
-    newParticipantIds[index] = personId;
+    const newParticipants = [...formData.participants];
+    newParticipants[index] = { 
+      personId, 
+      payment: personId > 0 ? formData.payment : '' 
+    };
     
-   
-    if (personId > 0 && index === newParticipantIds.length - 1) {
-      newParticipantIds.push(0);
+    if (personId > 0 && index === newParticipants.length - 1) {
+      newParticipants.push({ personId: 0, payment: '' });
     }
     
-    setFormData({ ...formData, participantIds: newParticipantIds });
+    setFormData({ ...formData, participants: newParticipants });
+  };
+
+  const handleParticipantPaymentChange = (index: number, payment: string) => {
+    const newParticipants = [...formData.participants];
+    newParticipants[index].payment = payment;
+    setFormData({ ...formData, participants: newParticipants });
   };
 
   const removeParticipant = (index: number) => {
-    const newParticipantIds = formData.participantIds.filter((_, i) => i !== index);
-
-    if (newParticipantIds.length === 0) {
-      newParticipantIds.push(0);
+    const newParticipants = formData.participants.filter((_, i) => i !== index);
+    if (newParticipants.length === 0) {
+      newParticipants.push({ personId: 0, payment: '' });
     }
-    setFormData({ ...formData, participantIds: newParticipantIds });
+    setFormData({ ...formData, participants: newParticipants });
   };
 
   const getAvailablePeople = (currentIndex: number) => {
     if (!Array.isArray(people)) return [];
-    const selectedIds = formData.participantIds.filter((id, index) => id > 0 && index !== currentIndex);
+    const selectedIds = formData.participants.filter((p, index) => p.personId > 0 && index !== currentIndex).map(p => p.personId);
     return people.filter(person => !selectedIds.includes(person.id));
   };
 
@@ -84,7 +91,7 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
       return;
     }
     
-    const selectedParticipants = formData.participantIds.filter(id => id > 0);
+    const selectedParticipants = formData.participants.filter(p => p.personId > 0);
     
     try {
       const response = await api.createEvent({
@@ -94,13 +101,13 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
         dateTime: formData.dateTime
       });
       
-    
-      for (const personId of selectedParticipants) {
-        await api.addParticipant(response.data.id, personId);
+      for (const participant of selectedParticipants) {
+        const payment = participant.payment ? Number(participant.payment) : Number(formData.payment);
+        await api.addParticipant(response.data.id, participant.personId, payment);
       }
       
       onEventAdded(response.data);
-      setFormData({ name: '', seasonId: '', payment: '', dateTime: new Date(new Date().getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 16), participantIds: [0] });
+      setFormData({ name: '', seasonId: '', payment: '', dateTime: new Date(new Date().getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 16), participants: [{ personId: 0, payment: '' }] });
       
  
       window.location.reload();
@@ -164,10 +171,10 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
       </div>
       <div>
         <label>Участники:</label>
-        {formData.participantIds.map((participantId, index) => (
+        {formData.participants.map((participant, index) => (
           <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
             <select
-              value={participantId}
+              value={participant.personId}
               onChange={(e) => handleParticipantChange(index, Number(e.target.value))}
               style={{ marginRight: '10px', width: '200px' }}
             >
@@ -178,7 +185,17 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
                 </option>
               ))}
             </select>
-            {formData.participantIds.length > 1 && participantId > 0 && (
+            {participant.personId > 0 && (
+              <input
+                type="number"
+                step="0.01"
+                value={participant.payment}
+                onChange={(e) => handleParticipantPaymentChange(index, e.target.value)}
+                placeholder="Оплата"
+                style={{ marginRight: '10px', width: '80px' }}
+              />
+            )}
+            {formData.participants.length > 1 && participant.personId > 0 && (
               <button
                 type="button"
                 onClick={() => removeParticipant(index)}

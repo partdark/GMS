@@ -162,7 +162,7 @@ export const PlayerReportComponent: React.FC = () => {
         '№': index + 1,
         'Название события': event.name,
         'Дата/время': event.dateTime ? event.dateTime.replace('T', ' ') : '-',
-        'Оплата': event.payment.toFixed(2)
+        'Оплата': event.payment.toFixed(2).replace('.', ',')
       }));
       
       const worksheet = XLSX.utils.json_to_sheet(excelData);

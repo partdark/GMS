@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Event, Person, Season } from '../types';
+import { Event, Person, Season, EventParticipant } from '../types';
 import { api } from '../api';
 
 interface EventsTableProps {
@@ -10,7 +10,7 @@ interface EventsTableProps {
 }
 
 interface EventWithParticipants extends Event {
-  participants?: Person[];
+  participants?: EventParticipant[];
   participantCount?: number;
 }
 
@@ -217,15 +217,42 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
     }
   };
 
+  const updateParticipantPayment = async (eventId: number, personId: number, payment: number) => {
+    try {
+      await api.updateParticipantPayment(eventId, personId, payment);
+      const eventIndex = eventsWithParticipants.findIndex(e => e.id === eventId);
+      if (eventIndex !== -1) {
+        const updatedEvents = [...eventsWithParticipants];
+        const participantIndex = updatedEvents[eventIndex].participants?.findIndex(p => p.id === personId);
+        if (participantIndex !== undefined && participantIndex !== -1 && updatedEvents[eventIndex].participants) {
+          updatedEvents[eventIndex].participants![participantIndex].payment = payment;
+          setEventsWithParticipants(updatedEvents);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating participant payment:', error);
+      alert('Ошибка обновления оплаты');
+    }
+  };
+
   const addParticipant = async (eventId: number, personId: number) => {
     try {
-      await api.addParticipant(eventId, personId);
+      const event = eventsWithParticipants.find(e => e.id === eventId);
+      const basePayment = event?.payment || 0;
+      await api.addParticipant(eventId, personId, basePayment);
       const eventIndex = eventsWithParticipants.findIndex(e => e.id === eventId);
       if (eventIndex !== -1) {
         const person = people.find(p => p.id === personId);
         if (person) {
           const updatedEvents = [...eventsWithParticipants];
-          updatedEvents[eventIndex].participants = [...(updatedEvents[eventIndex].participants || []), person];
+          const newParticipant: EventParticipant = {
+            id: person.id,
+            name: person.name,
+            gameName: person.gameName,
+            phoneNumber: person.phoneNumber,
+            payment: basePayment
+          };
+          updatedEvents[eventIndex].participants = [...(updatedEvents[eventIndex].participants || []), newParticipant];
           updatedEvents[eventIndex].participantCount = updatedEvents[eventIndex].participants?.length || 0;
           setEventsWithParticipants(updatedEvents);
         }
@@ -325,11 +352,10 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
             >
               Дата/время {getSortIcon('dateTime')}
             </th>
-            <th 
-              style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'left', cursor: 'pointer' }}
+            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'left', cursor: 'pointer' }}
               onClick={() => handleSort('payment')}
             >
-              Оплата {getSortIcon('payment')}
+              Базовая оплата {getSortIcon('payment')}
             </th>
             <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Кол-во участников</th>
             <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Участники</th>
@@ -402,7 +428,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
                       marginRight: '5px'
                     }}
                   >
-                    {expandedEvents.has(event.id) ? 'Скрыть' : 'Показать'}
+                    {expandedEvents.has(event.id) ? 'Скрыть и сохранить' : 'Показать'}
                   </button>
                 </td>
                 <td style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>
@@ -475,27 +501,49 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
                     <strong>Участники события:</strong>
                     {Array.isArray(event.participants) && event.participants.length > 0 ? (
                       <div style={{ margin: '10px 0' }}>
-                        {event.participants.map(participant => (
-                          <div key={participant.id} style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
-                            <span style={{ marginRight: '10px' }}>
-                              {participant.name || participant.gameName} ({participant.id})
-                            </span>
-                            <button
-                              onClick={() => removeParticipant(event.id, participant.id)}
-                              style={{
-                                backgroundColor: '#dc3545',
-                                color: 'white',
-                                border: 'none',
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                fontSize: '12px'
-                              }}
-                            >
-                              Удалить
-                            </button>
-                          </div>
-                        ))}
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#e9ecef' }}>
+                              <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'left' }}>Имя</th>
+                              <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>Оплата</th>
+                              <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>Действия</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {event.participants.map(participant => (
+                              <tr key={participant.id}>
+                                <td style={{ border: '1px solid #ccc', padding: '8px' }}>
+                                  {participant.name || participant.gameName} ({participant.id})
+                                </td>
+                                <td style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={participant.payment}
+                                    onChange={(e) => updateParticipantPayment(event.id, participant.id, Number(e.target.value))}
+                                    style={{ width: '80px', textAlign: 'center' }}
+                                  />
+                                </td>
+                                <td style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>
+                                  <button
+                                    onClick={() => removeParticipant(event.id, participant.id)}
+                                    style={{
+                                      backgroundColor: '#dc3545',
+                                      color: 'white',
+                                      border: 'none',
+                                      padding: '4px 8px',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      fontSize: '12px'
+                                    }}
+                                  >
+                                    Удалить
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     ) : (
                       <p style={{ margin: '10px 0', fontStyle: 'italic', color: '#666' }}>

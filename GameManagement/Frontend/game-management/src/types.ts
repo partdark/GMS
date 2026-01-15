@@ -22,6 +22,14 @@ export interface Event {
   season?: Season;
 }
 
+export interface EventParticipant {
+  id: number;
+  name?: string;
+  gameName: string;
+  phoneNumber?: string;
+  payment: number;
+}
+
 export interface SeasonReport {
   person: Person;
   eventsCount: number;

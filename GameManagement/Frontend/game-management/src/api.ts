@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Person, Season, Event, SeasonReport } from './types';
+import { Person, Season, Event, SeasonReport, EventParticipant } from './types';
 
 const API_BASE = 'http://localhost:5024/api';
 
@@ -58,10 +58,12 @@ export const api = {
   createEvent: (event: Omit<Event, 'id' | 'season'>) => axios.post<Event>(`${API_BASE}/events`, event),
   updateEvent: (id: number, event: Event) => axios.put<Event>(`${API_BASE}/events/${id}`, event),
   deleteEvent: (id: number) => axios.delete(`${API_BASE}/events/${id}`),
-  addParticipant: (eventId: number, personId: number) => 
-    axios.post(`${API_BASE}/events/${eventId}/participants/${personId}`),
+  addParticipant: (eventId: number, personId: number, payment?: number) => 
+    axios.post(`${API_BASE}/events/${eventId}/participants/${personId}`, { payment }),
+  updateParticipantPayment: (eventId: number, personId: number, payment: number) => 
+    axios.put(`${API_BASE}/events/${eventId}/participants/${personId}/payment`, { payment }),
   removeParticipant: (eventId: number, personId: number) => 
     axios.delete(`${API_BASE}/events/${eventId}/participants/${personId}`),
   getEventParticipants: (eventId: number) => 
-    axios.get<Person[]>(`${API_BASE}/events/${eventId}/participants`),
+    axios.get<EventParticipant[]>(`${API_BASE}/events/${eventId}/participants`),
 };

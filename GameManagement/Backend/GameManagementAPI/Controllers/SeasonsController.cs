@@ -90,8 +90,8 @@ namespace GameManagementAPI.Controllers
                 {
                     Person = g.Key,
                     EventsCount = g.Count(),
-                    TotalPayment = g.Sum(ep => ep.Event.Payment),
-                    HasPayment = g.Any(ep => ep.Event.Payment > 0)
+                    TotalPayment = g.Sum(ep => ep.Payment),
+                    HasPayment = g.Any(ep => ep.Payment > 0)
                 });
 
             if (paidOnly)

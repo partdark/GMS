@@ -91,7 +91,7 @@ namespace GameManagementAPI.Controllers
                 .Where(ep => ep.PersonId == id)
                 .Include(ep => ep.Event)
                 .Where(ep => ep.Event.SeasonId == seasonId)
-                .SumAsync(ep => ep.Event.Payment);
+                .SumAsync(ep => ep.Payment);
             
             return Ok(new
             {
