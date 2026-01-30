@@ -24,8 +24,15 @@ namespace GameManagementAPI.Controllers
                 .OrderByDescending(s => s.StartDate)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
-            
+                .Select(s => new
+                {
+                    s.Id,
+                    s.StartDate,
+                    s.IsActive,
+                    EventsCount = _context.Events.Count(e => e.SeasonId == s.Id)
+                })
+                 .ToListAsync();
+
             return Ok(new
             {
                 Seasons = seasons,
@@ -75,39 +82,40 @@ namespace GameManagementAPI.Controllers
         [HttpGet("{id}/report")]
         public async Task<ActionResult> GetSeasonReport(int id, [FromQuery] bool paidOnly = false, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
-            var season = await _context.Seasons
-                .Include(s => s.Events)
-                .ThenInclude(e => e.EventParticipants)
-                .ThenInclude(ep => ep.Person)
-                .FirstOrDefaultAsync(s => s.Id == id);
+            if (pageSize <= 0) return BadRequest("PageSize must be greater than 0");
 
-            if (season == null) return NotFound();
-
-            var participants = season.Events
-                .SelectMany(e => e.EventParticipants)
+            var query = _context.EventParticipants
+                .Where(ep => ep.Event.SeasonId == id)
                 .GroupBy(ep => ep.Person)
                 .Select(g => new
                 {
-                    Person = g.Key,
+                    Person = new
+                    {
+                        Id = g.Key.Id,
+                        GameName = g.Key.GameName,
+                        Name = g.Key.Name,
+                        PhoneNumber = g.Key.PhoneNumber
+                    },
                     EventsCount = g.Count(),
-                    TotalPayment = g.Sum(ep => ep.Payment),
-                    HasPayment = g.Any(ep => ep.Payment > 0)
+                    TotalPayment = g.Sum(x => x.Payment),
+                    HasPayment = g.Any(x => x.Payment > 0)
                 });
 
             if (paidOnly)
-                participants = participants.Where(p => p.HasPayment);
+                query = query.Where(p => p.HasPayment);
 
-            var totalCount = participants.Count();
-            var paginatedParticipants = participants
+            var totalCount = await query.CountAsync();
+            var totalSum = await query.SumAsync(p => p.TotalPayment);
+
+            var participants = await query
+                .OrderBy(p => p.Person.GameName)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToList();
+                .ToListAsync();
 
-            var totalSum = participants.Sum(p => p.TotalPayment);
-            
             return Ok(new
             {
-                Participants = paginatedParticipants,
+                Participants = participants,
                 TotalCount = totalCount,
                 TotalSum = totalSum,
                 Page = page,
@@ -115,5 +123,8 @@ namespace GameManagementAPI.Controllers
                 TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
             });
         }
+
+
+
     }
 }

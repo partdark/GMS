@@ -22,46 +22,38 @@ export const SeasonsTable: React.FC<SeasonsTableProps> = ({ seasons: initialSeas
   }, [currentPage]);
 
   const loadSeasons = async () => {
-    setLoading(true);
-    try {
-      const response = await api.getSeasons(currentPage, 50);
-      console.log('Seasons API response:', response.data);
-      
-      let seasonsData = [];
-      if (response.data.seasons) {
-        seasonsData = response.data.seasons;
-        setTotalPages(response.data.totalPages || 1);
-      } else if (response.data.Seasons) {
-        seasonsData = response.data.Seasons;
-        setTotalPages(response.data.TotalPages || 1);
-      } else if (Array.isArray(response.data)) {
-        seasonsData = response.data;
-        setTotalPages(1);
-      }
-      
-      setSeasons(seasonsData);
-      
-
-      const seasonsWithEventCounts = await Promise.all(
-        seasonsData.map(async (season: any) => {
-          try {
-            const eventsResponse = await api.getEvents(1, 1000, season.id);
-            const eventsData = eventsResponse.data.events || eventsResponse.data.Events || eventsResponse.data;
-            const eventCount = Array.isArray(eventsData) ? eventsData.length : (eventsResponse.data.totalCount || 0);
-            return { ...season, eventCount };
-          } catch (error) {
-            return { ...season, eventCount: 0 };
-          }
-        })
-      );
-      setSeasonsWithCounts(seasonsWithEventCounts);
-    } catch (error) {
-      console.error('Error loading seasons:', error);
-      setSeasons([]);
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const response = await api.getSeasons(currentPage, 50);
+    console.log('Seasons API response:', response.data);
+    
+    let seasonsData = [];
+    if (response.data.seasons) {
+      seasonsData = response.data.seasons;
+      setTotalPages(response.data.totalPages || 1);
+    } else if (response.data.Seasons) {
+      seasonsData = response.data.Seasons;
+      setTotalPages(response.data.TotalPages || 1);
+    } else if (Array.isArray(response.data)) {
+      seasonsData = response.data;
+      setTotalPages(1);
     }
-  };
+    
+    const seasonsWithEventCounts = seasonsData.map((season: any) => ({
+      ...season,
+      eventCount: season.eventsCount ||  0
+    }));
+    
+    setSeasons(seasonsData);
+    setSeasonsWithCounts(seasonsWithEventCounts);
+  } catch (error) {
+    console.error('Error loading seasons:', error);
+    setSeasons([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleSort = (field: keyof Season) => {
     if (sortField === field) {
@@ -85,6 +77,11 @@ export const SeasonsTable: React.FC<SeasonsTableProps> = ({ seasons: initialSeas
         isActive: !season.isActive 
       };
       await api.updateSeason(season.id, updatedSeason);
+     
+         const updatedSeasons = seasonsWithCounts.map(s => 
+      s.id === season.id ? { ...s, isActive: !s.isActive } : s
+    );
+    setSeasonsWithCounts(updatedSeasons);
       onSeasonUpdated(updatedSeason);
     } catch (error) {
       console.error('Error updating season:', error);
