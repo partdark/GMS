@@ -5,6 +5,9 @@ services:
       POSTGRES_DB: gamemanagement
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      POSTGRES_SHARED_BUFFERS: 100MB     
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 150MB
+      POSTGRES_WORK_MEM: 16MB   
     ports:
       - "5433:5432"
     volumes:

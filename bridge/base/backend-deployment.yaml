@@ -1,0 +1,39 @@
+#! backend-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: backend
+    namespace: project
+    labels:
+        com.docker.compose.project: project
+        com.docker.compose.service: backend
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: project
+            com.docker.compose.service: backend
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: project
+                com.docker.compose.service: backend
+                com.docker.compose.network.default: "true"
+        spec:
+            containers:
+                - name: backend
+                  image: project-backend
+                  imagePullPolicy: IfNotPresent
+                  env:
+                    - name: ASPNETCORE_ENVIRONMENT
+                      value: "Production"
+                    - name: ASPNETCORE_URLS
+                      value: "http://+:80"
+                    - name: ConnectionStrings__DefaultConnection
+                      value: "Host=postgres;Database=gamemanagement;Username=postgres;Password=postgres"
+                  ports:
+                    - name: backend-80
+                      containerPort: 80
