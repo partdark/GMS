@@ -20,6 +20,7 @@ export const ParticipantAutocomplete: React.FC<ParticipantAutocompleteProps> = (
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [filteredPeople, setFilteredPeople] = useState<Person[]>([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -63,26 +64,61 @@ export const ParticipantAutocomplete: React.FC<ParticipantAutocompleteProps> = (
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    setHighlightedIndex(-1);
   };
 
   const handlePersonSelect = (person: Person) => {
     onSelect(person.id);
     setIsOpen(false);
     setSearchTerm('');
+    setHighlightedIndex(-1);
   };
 
   const handleToggleDropdown = () => {
     if (!disabled) {
       setIsOpen(!isOpen);
+      setHighlightedIndex(-1);
       if (!isOpen) {
         setTimeout(() => inputRef.current?.focus(), 0);
       }
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isOpen) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < filteredPeople.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredPeople.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < filteredPeople.length) {
+          handlePersonSelect(filteredPeople[highlightedIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setIsOpen(false);
+        setSearchTerm('');
+        setHighlightedIndex(-1);
+        break;
+    }
+  };
+
   const handleClearSelection = () => {
     onSelect(0);
     setSearchTerm('');
+    setHighlightedIndex(-1);
   };
 
   return (
@@ -123,17 +159,28 @@ export const ParticipantAutocomplete: React.FC<ParticipantAutocompleteProps> = (
             type="text"
             value={searchTerm}
             onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
             placeholder="Поиск..."
             className="participant-autocomplete-search"
           />
           <div className="participant-autocomplete-options">
             {filteredPeople.length > 0 ? (
-              filteredPeople.map(person => (
+              filteredPeople.map((person, index) => (
                 <div
                   key={person.id}
                   onClick={() => handlePersonSelect(person)}
-                  className={`participant-autocomplete-item ${selectedPersonId === person.id ? 'selected' : ''}`}
+                  className={`participant-autocomplete-item ${
+                    selectedPersonId === person.id ? 'selected' : ''
+                  } ${
+                    highlightedIndex === index ? 'highlighted' : ''
+                  }`}
                   tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handlePersonSelect(person);
+                    }
+                  }}
                 >
                   <div className="participant-autocomplete-name">{person.name}</div>
                   <div className="participant-autocomplete-gamename">({person.gameName})</div>

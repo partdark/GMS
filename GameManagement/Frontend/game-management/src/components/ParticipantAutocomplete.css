@@ -111,6 +111,11 @@
   background-color: #e3f2fd;
 }
 
+.participant-autocomplete-item.highlighted {
+  background-color: #f0f8ff;
+  border-left: 3px solid #007bff;
+}
+
 .participant-autocomplete-item:last-child {
   border-bottom: none;
 }
