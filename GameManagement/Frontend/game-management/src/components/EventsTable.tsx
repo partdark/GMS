@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Event, Person, Season, EventParticipant } from '../types';
 import { api } from '../api';
+import { ParticipantAutocomplete } from './ParticipantAutocomplete';
 
 interface EventsTableProps {
   events: Event[];
@@ -358,7 +359,7 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
               Базовая оплата {getSortIcon('payment')}
             </th>
             <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Кол-во участников</th>
-            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Участники</th>
+            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Управление участниками</th>
             <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Действия</th>
           </tr>
         </thead>
@@ -419,16 +420,19 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
                   <button
                     onClick={() => toggleExpand(event.id)}
                     style={{
-                      backgroundColor: '#007bff',
+                      backgroundColor: expandedEvents.has(event.id) ? '#28a745' : '#007bff',
                       color: 'white',
                       border: 'none',
-                      padding: '5px 10px',
+                      padding: '8px 16px',
                       borderRadius: '4px',
                       cursor: 'pointer',
-                      marginRight: '5px'
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      transition: 'all 0.2s',
+                      minWidth: '120px'
                     }}
                   >
-                    {expandedEvents.has(event.id) ? 'Скрыть и сохранить' : 'Показать'}
+                    {expandedEvents.has(event.id) ? '✓ Скрыть' : '👥 Управление'}
                   </button>
                 </td>
                 <td style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>
@@ -497,81 +501,104 @@ export const EventsTable: React.FC<EventsTableProps> = ({ events, seasons, onEve
               </tr>
               {expandedEvents.has(event.id) && (
                 <tr>
-                  <td colSpan={8} style={{ border: '1px solid #ddd', padding: '12px', backgroundColor: '#f0f8ff' }}>
-                    <strong>Участники события:</strong>
-                    {Array.isArray(event.participants) && event.participants.length > 0 ? (
-                      <div style={{ margin: '10px 0' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
-                          <thead>
-                            <tr style={{ backgroundColor: '#e9ecef' }}>
-                              <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'left' }}>Имя</th>
-                              <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>Оплата</th>
-                              <th style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>Действия</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {event.participants.map(participant => (
-                              <tr key={participant.id}>
-                                <td style={{ border: '1px solid #ccc', padding: '8px' }}>
-                                  {participant.name || participant.gameName} ({participant.id})
-                                </td>
-                                <td style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={participant.payment}
-                                    onChange={(e) => updateParticipantPayment(event.id, participant.id, Number(e.target.value))}
-                                    style={{ width: '80px', textAlign: 'center' }}
-                                  />
-                                </td>
-                                <td style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>
-                                  <button
-                                    onClick={() => removeParticipant(event.id, participant.id)}
-                                    style={{
-                                      backgroundColor: '#dc3545',
-                                      color: 'white',
-                                      border: 'none',
-                                      padding: '4px 8px',
-                                      borderRadius: '4px',
-                                      cursor: 'pointer',
-                                      fontSize: '12px'
-                                    }}
-                                  >
-                                    Удалить
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                  <td colSpan={8} style={{ border: '1px solid #ddd', padding: '16px', backgroundColor: '#f0f8ff' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* Заголовок и добавление участника */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                        <strong style={{ fontSize: '16px', color: '#333' }}>Управление участниками события</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '300px' }}>
+                          <span style={{ fontWeight: '500', whiteSpace: 'nowrap' }}>Добавить:</span>
+                          <ParticipantAutocomplete
+                            people={Array.isArray(people) ? people.filter(person => 
+                              !Array.isArray(event.participants) || 
+                              !event.participants.some(p => p.id === person.id)
+                            ) : []}
+                            selectedPersonId={0}
+                            onSelect={(personId) => {
+                              if (personId > 0) {
+                                addParticipant(event.id, personId);
+                              }
+                            }}
+                            placeholder="Выберите участника..."
+                          />
+                        </div>
                       </div>
-                    ) : (
-                      <p style={{ margin: '10px 0', fontStyle: 'italic', color: '#666' }}>
-                        Участники не найдены
-                      </p>
-                    )}
-                    <div style={{ marginTop: '10px' }}>
-                      <strong>Добавить участника:</strong>
-                      <select
-                        onChange={(e) => {
-                          const personId = Number(e.target.value);
-                          if (personId > 0) {
-                            addParticipant(event.id, personId);
-                            e.target.value = '0';
-                          }
-                        }}
-                        style={{ marginLeft: '10px', padding: '5px' }}
-                      >
-                        <option value="0">Выберите участника</option>
-                        {Array.isArray(people) && people
-                          .filter(person => !Array.isArray(event.participants) || !event.participants.some(p => p.id === person.id))
-                          .map(person => (
-                            <option key={person.id} value={person.id}>
-                              {person.name || person.gameName} ({person.id})
-                            </option>
-                          ))
-                        }
-                      </select>
+
+                      {/* Список участников */}
+                      {Array.isArray(event.participants) && event.participants.length > 0 ? (
+                        <div style={{ backgroundColor: 'white', borderRadius: '6px', border: '1px solid #dee2e6', maxWidth: '600px' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                              <tr style={{ backgroundColor: '#e9ecef' }}>
+                                <th style={{ border: '1px solid #ccc', padding: '12px', textAlign: 'left', fontWeight: '600' }}>Участник</th>
+                                <th style={{ border: '1px solid #ccc', padding: '12px', textAlign: 'center', fontWeight: '600', width: '150px' }}>Оплата</th>
+                                <th style={{ border: '1px solid #ccc', padding: '12px', textAlign: 'center', fontWeight: '600', width: '100px' }}>Действия</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {event.participants.map((participant, idx) => (
+                                <tr key={participant.id} style={{ backgroundColor: idx % 2 === 0 ? '#fff' : '#f8f9fa' }}>
+                                  <td style={{ border: '1px solid #ccc', padding: '12px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                      <span style={{ fontWeight: '500', color: '#333' }}>
+                                        {participant.name || participant.gameName}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td style={{ border: '1px solid #ccc', padding: '12px', textAlign: 'center' }}>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      value={participant.payment}
+                                      onChange={(e) => updateParticipantPayment(event.id, participant.id, Number(e.target.value))}
+                                      style={{ 
+                                        width: '100px', 
+                                        textAlign: 'center',
+                                        padding: '6px 8px',
+                                        border: '1px solid #ccc',
+                                        borderRadius: '4px',
+                                        fontSize: '14px'
+                                      }}
+                                    />
+                                  </td>
+                                  <td style={{ border: '1px solid #ccc', padding: '12px', textAlign: 'center' }}>
+                                    <button
+                                      onClick={() => removeParticipant(event.id, participant.id)}
+                                      style={{
+                                        backgroundColor: '#dc3545',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '6px 12px',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        fontWeight: '500',
+                                        transition: 'background-color 0.2s'
+                                      }}
+                                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#c82333'}
+                                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#dc3545'}
+                                    >
+                                      Удалить
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '20px', 
+                          backgroundColor: 'white', 
+                          borderRadius: '6px', 
+                          border: '1px solid #dee2e6',
+                          color: '#666',
+                          fontStyle: 'italic'
+                        }}>
+                          Участники не добавлены. Используйте поле выше для добавления участников.
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>

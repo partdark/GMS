@@ -12,7 +12,8 @@ export const PersonForm: React.FC<PersonFormProps> = ({ onPersonAdded }) => {
     phoneNumber: '',
     name: '',
     password: '',
-    role: 'user'
+    role: 'user',
+    isActive: true
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,7 +26,7 @@ export const PersonForm: React.FC<PersonFormProps> = ({ onPersonAdded }) => {
     try {
       const response = await api.createPerson(formData);
       onPersonAdded(response.data);
-      setFormData({ gameName: '', phoneNumber: '', name: '', password: '', role: 'user' });
+      setFormData({ gameName: '', phoneNumber: '', name: '', password: '', role: 'user', isActive: true });
       
       // Перезагружаем страницу для обновления всех таблиц
       window.location.reload();

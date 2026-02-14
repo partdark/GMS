@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { Season, Event, Person } from '../types';
+import { ParticipantAutocomplete } from './ParticipantAutocomplete';
 
 interface EventFormProps {
   onEventAdded: (event: Event) => void;
@@ -57,8 +58,16 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
       payment: personId > 0 ? formData.payment : '' 
     };
     
+    // Добавляем новое поле только если выбрали участника в последнем поле и это поле не пустое
     if (personId > 0 && index === newParticipants.length - 1) {
       newParticipants.push({ personId: 0, payment: '' });
+    }
+    
+    // Убираем лишние пустые поля в конце (оставляем только одно)
+    while (newParticipants.length > 1 && 
+           newParticipants[newParticipants.length - 1].personId === 0 && 
+           newParticipants[newParticipants.length - 2].personId === 0) {
+      newParticipants.pop();
     }
     
     setFormData({ ...formData, participants: newParticipants });
@@ -172,19 +181,13 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
       <div>
         <label>Участники:</label>
         {formData.participants.map((participant, index) => (
-          <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
-            <select
-              value={participant.personId}
-              onChange={(e) => handleParticipantChange(index, Number(e.target.value))}
-              style={{ marginRight: '10px', width: '200px' }}
-            >
-              <option value={0}>Выберите участника</option>
-              {getAvailablePeople(index).map(person => (
-                <option key={person.id} value={person.id}>
-                  {person.name} ({person.gameName})
-                </option>
-              ))}
-            </select>
+          <div key={`${index}-${participant.personId}`} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '2px', minHeight: '40px' }}>
+            <ParticipantAutocomplete
+              people={getAvailablePeople(index)}
+              selectedPersonId={participant.personId}
+              onSelect={(personId) => handleParticipantChange(index, personId)}
+              placeholder="Выберите участника..."
+            />
             {participant.personId > 0 && (
               <input
                 type="number"
@@ -192,14 +195,14 @@ export const EventForm: React.FC<EventFormProps> = ({ onEventAdded }) => {
                 value={participant.payment}
                 onChange={(e) => handleParticipantPaymentChange(index, e.target.value)}
                 placeholder="Оплата"
-                style={{ marginRight: '10px', width: '80px' }}
+                style={{ marginLeft: '10px', width: '100px', fontSize: '16px', height: '32px', padding: '4px 6px', boxSizing: 'border-box' }}
               />
             )}
             {formData.participants.length > 1 && participant.personId > 0 && (
               <button
                 type="button"
                 onClick={() => removeParticipant(index)}
-                style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px' }}
+                style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', marginLeft: '10px', fontSize: '16px', height: '32px' }}
               >
                 Удалить
               </button>

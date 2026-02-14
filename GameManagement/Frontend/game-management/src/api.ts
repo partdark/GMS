@@ -5,17 +5,21 @@ const API_BASE = 'http://localhost:5024/api';
 
 export const api = {
   // People
-  getPeople: (page: number = 1, pageSize: number = 100, sortBy: string = 'gameName', sortDirection: string = 'asc') => {
+  getPeople: (page: number = 1, pageSize: number = 100, sortBy: string = 'gameName', sortDirection: string = 'asc', includeInactive: boolean = false) => {
     const params = new URLSearchParams({ 
       page: page.toString(), 
       pageSize: pageSize.toString(),
       sortBy: sortBy,
-      sortDirection: sortDirection
+      sortDirection: sortDirection,
+      includeInactive: includeInactive.toString()
     });
     return axios.get(`${API_BASE}/people?${params}`);
   },
   createPerson: (person: Omit<Person, 'id'>) => axios.post<Person>(`${API_BASE}/people`, person),
   updatePerson: (id: number, person: Person) => axios.put<Person>(`${API_BASE}/people/${id}`, person),
+  deletePerson: (id: number) => axios.delete(`${API_BASE}/people/${id}`),
+  activatePerson: (id: number) => axios.post(`${API_BASE}/people/${id}/activate`),
+  getAvailableParticipants: () => axios.get<Person[]>(`${API_BASE}/events/available-participants`),
   getPersonReport: (personId: number, seasonId: number, page: number = 1, pageSize: number = 50, sortBy: string = 'dateTime', sortDirection: string = 'desc') => {
     const params = new URLSearchParams({ 
       seasonId: seasonId.toString(), 

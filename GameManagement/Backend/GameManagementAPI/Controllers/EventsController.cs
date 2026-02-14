@@ -82,6 +82,9 @@ namespace GameManagementAPI.Controllers
             var eventItem = await _context.Events.FindAsync(eventId);
             if (eventItem == null) return NotFound("Event not found");
             
+            var person = await _context.People.FindAsync(personId);
+            if (person == null || !person.IsActive) return BadRequest("Person not found or inactive");
+            
             var participant = new EventParticipant 
             { 
                 EventId = eventId, 
@@ -91,6 +94,16 @@ namespace GameManagementAPI.Controllers
             _context.EventParticipants.Add(participant);
             await _context.SaveChangesAsync();
             return Ok();
+        }
+        
+        [HttpGet("available-participants")]
+        public async Task<ActionResult<IEnumerable<Person>>> GetAvailableParticipants()
+        {
+            var activePeople = await _context.People
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.GameName)
+                .ToListAsync();
+            return Ok(activePeople);
         }
 
         [HttpGet("{eventId}/participants")]

@@ -31,6 +31,10 @@ namespace GameManagementAPI.Data
                 .HasOne(e => e.Season)
                 .WithMany(s => s.Events)
                 .HasForeignKey(e => e.SeasonId);
+                
+            modelBuilder.Entity<Person>()
+                .Property(p => p.IsActive)
+                .HasDefaultValue(true);
         }
     }
 }

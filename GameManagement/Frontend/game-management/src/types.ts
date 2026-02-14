@@ -5,6 +5,7 @@ export interface Person {
   name?: string;
   password?: string;
   role: string;
+  isActive: boolean;
 }
 
 export interface Season {

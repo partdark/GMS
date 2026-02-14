@@ -17,10 +17,15 @@ namespace GameManagementAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<object>> GetPeople([FromQuery] int page = 1, [FromQuery] int pageSize = 100, [FromQuery] string sortBy = "gameName", [FromQuery] string sortDirection = "asc")
+        public async Task<ActionResult<object>> GetPeople([FromQuery] int page = 1, [FromQuery] int pageSize = 100, [FromQuery] string sortBy = "gameName", [FromQuery] string sortDirection = "asc", [FromQuery] bool includeInactive = false)
         {
-            var totalCount = await _context.People.CountAsync();
-            var people = await _context.People
+            var query = _context.People.AsQueryable();
+            
+            if (!includeInactive)
+                query = query.Where(p => p.IsActive);
+                
+            var totalCount = await query.CountAsync();
+            var people = await query
                 .ApplySortPeople(sortBy, sortDirection)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -61,6 +66,7 @@ namespace GameManagementAPI.Controllers
                 if (!string.IsNullOrEmpty(person.Password))
                     existingPerson.Password = person.Password;
                 existingPerson.Role = person.Role;
+                existingPerson.IsActive = person.IsActive;
                 
                 await _context.SaveChangesAsync();
                 return NoContent();
@@ -110,7 +116,19 @@ namespace GameManagementAPI.Controllers
         {
             var person = await _context.People.FindAsync(id);
             if (person == null) return NotFound();
-            _context.People.Remove(person);
+            
+            person.IsActive = false;
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+        
+        [HttpPost("{id}/activate")]
+        public async Task<IActionResult> ActivatePerson(int id)
+        {
+            var person = await _context.People.FindAsync(id);
+            if (person == null) return NotFound();
+            
+            person.IsActive = true;
             await _context.SaveChangesAsync();
             return NoContent();
         }

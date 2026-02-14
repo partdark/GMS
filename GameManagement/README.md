@@ -30,6 +30,49 @@
 - Node.js 18+
 - PostgreSQL
 
+### Docker:
+1. Запустите контейнеры:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Если пропали данные:**
+   ```bash
+   # Проверить volumes
+   docker volume ls
+   
+   # Подключиться к PostgreSQL
+   docker exec -it project-postgres-1 psql -U postgres -d gamemanagement
+   ```
+   
+   В PostgreSQL:
+   ```sql
+   -- Проверить данные
+   SELECT 'People' as table_name, COUNT(*) FROM "People"
+   UNION ALL SELECT 'Seasons', COUNT(*) FROM "Seasons"
+   UNION ALL SELECT 'Events', COUNT(*) FROM "Events";
+   
+   -- Если данные есть, активировать пользователей
+   UPDATE "People" SET "IsActive" = true;
+   
+   -- Если данных нет, проверить другие базы
+   \l
+   ```
+
+3. **Если данные в другом volume:**
+   ```bash
+   # Остановить контейнеры
+   docker-compose down
+   
+   # Найти старые volumes
+   docker volume ls | grep postgres
+   
+   # Использовать старый volume в docker-compose.yml
+   ```
+
+4. Откройте приложение: http://localhost:3000
+4. API доступно на: http://localhost:5024
+
 ### Backend:
 1. Установите PostgreSQL и создайте базу данных `gamemanagement`
 2. Обновите строку подключения в `appsettings.json`
@@ -59,13 +102,19 @@
 
 ### Основные возможности:
 - ✅ Добавление новых участников
+- ✅ Отключение/активация участников (мягкое удаление)
 - ✅ Создание сезонов и событий
 - ✅ Отчеты по сезонам для всех участников
 - ✅ Фильтрация участников с оплатой/без оплаты
 - ✅ Управление списком участников событий
+- ✅ Только активные участники отображаются при добавлении в события
+- ✅ **Автодополнение при поиске участников** - начните вводить имя или игровое имя участника для быстрого поиска
 
 ### API Endpoints:
 - `GET/POST /api/people` - управление участниками
+- `DELETE /api/people/{id}` - отключение участника (мягкое удаление)
+- `POST /api/people/{id}/activate` - активация участника
+- `GET /api/events/available-participants` - получение активных участников
 - `GET/POST /api/seasons` - управление сезонами
 - `GET /api/seasons/{id}/report` - отчеты по сезону
 - `GET/POST /api/events` - управление событиями

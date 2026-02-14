@@ -22,6 +22,8 @@ namespace GameManagementAPI.Models
         [StringLength(20)]
         public string Role { get; set; } = "user";
         
+        public bool IsActive { get; set; } = true;
+        
         public virtual ICollection<EventParticipant> EventParticipants { get; set; } = new List<EventParticipant>();
     }
 }
